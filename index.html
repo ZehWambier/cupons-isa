@@ -43,7 +43,10 @@ body{font-family:var(--body);padding-inline:16px;padding-block:20px 48px}
 .note{font-family:var(--hand);font-size:24px;line-height:1.15;color:var(--red-deep);margin:0;text-align:center}
 .bar{display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap}
 .count{font-size:13px;color:var(--muted);font-weight:800;letter-spacing:.04em;font-variant-numeric:tabular-nums}
-.tabs{display:flex;gap:6px}
+.tabs{display:flex;gap:6px;overflow-x:auto;margin-inline:-16px;padding:2px 16px 4px;scrollbar-width:none}
+.tabs::-webkit-scrollbar{display:none}
+.tab{flex:none}
+.cat{font-family:var(--display);font-size:13px;letter-spacing:.12em;text-transform:uppercase;color:var(--red);margin:10px 0 -4px;list-style:none}
 .tab{font:inherit;font-size:12px;font-weight:800;letter-spacing:.06em;text-transform:uppercase;border-radius:99px;padding:7px 12px;border:2px solid #2a141426;background:transparent;color:var(--ink);cursor:pointer}
 .tab[aria-pressed="true"]{background:var(--ink);color:var(--paper);border-color:var(--ink)}
 .tab:focus-visible{outline:3px solid var(--red);outline-offset:2px}
@@ -127,14 +130,8 @@ footer{font-size:12px;color:var(--muted);text-align:center;line-height:1.5}
   <ul class="book" id="cover-slot"></ul>
   <p class="note">Escolhe um vale, me mostra, e eu cumpro.</p>
 
-  <div class="bar">
-    <div class="count" id="count"></div>
-    <div class="tabs" role="group" aria-label="Filtrar vales">
-      <button class="tab" id="tab-all" aria-pressed="true">Todos</button>
-      <button class="tab" id="tab-free" aria-pressed="false">Disponíveis</button>
-      <button class="tab" id="tab-used" aria-pressed="false">Usados</button>
-    </div>
-  </div>
+  <div class="bar"><div class="count" id="count"></div></div>
+  <div class="tabs" id="tabs" role="group" aria-label="Filtrar vales"></div>
   <button class="luck" id="luck">Não sei qual escolher, sorteia um</button>
 
   <ul class="book" id="book"></ul>
@@ -157,33 +154,54 @@ footer{font-size:12px;color:var(--muted);text-align:center;line-height:1.5}
 const NAME = "ISA";
 const STORE_KEY = "cupons-isa-v2";
 const WILD = "coringa";
+const CATS = [
+  {id:"escapada", n:"Escapadas"},
+  {id:"postal", n:"Rio cartão-postal"},
+  {id:"comer", n:"Comer bem"},
+  {id:"aventura", n:"Aventuras"},
+  {id:"casa", n:"Em casa"}
+];
 const VALES = [
-  {id:"corcovado", e:"⛰️", t:"Vale um passeio ao Cristo, no Corcovado", d:"Subida de trem, a foto clássica de braços abertos e um açaí lá embaixo depois."},
-  {id:"pao", e:"🚡", t:"Vale um fim de tarde no Pão de Açúcar", d:"Bondinho no fim da tarde pra ver o sol se pôr sobre a Guanabara. Os ingressos são por minha conta."},
-  {id:"grumari", e:"🏖️", t:"Vale um dia de praia em Grumari", d:"Cadeira, guarda-sol, cooler e zero pressa. Na volta, paramos pra comer onde você quiser."},
-  {id:"arpoador", e:"🌅", t:"Vale um pôr do sol no Arpoador", d:"A gente chega cedo, pega um lugar na pedra e aplaude o sol junto com o Rio inteiro."},
-  {id:"jantar", e:"🍝", t:"Vale um jantar no seu restaurante favorito", d:"Você escolhe o lugar, eu faço a reserva e a sobremesa não é opcional."},
-  {id:"aventura", e:"🧭", t:"Vale uma aventura nova que nunca fizemos juntos", d:"Algo que nenhum de nós dois fez ainda. Você sugere, eu organizo."},
-  {id:"diasim", e:"🙌", t:"Vale um dia de sim: não posso recusar nenhuma ideia sua", d:"Do café ao jantar, a resposta é sim. Com moderação, por favor."},
-  {id:"offline", e:"📵", t:"Vale um dia offline a dois", d:"Celulares guardados na gaveta do café da manhã até a hora de dormir."},
-  {id:"piquenique", e:"🧺", t:"Vale um piquenique no Parque Lage com tudo preparado por mim", d:"Toalha, cesta montada e comidinhas que você gosta. Você só aparece."},
-  {id:"presente", e:"🎁", t:"Vale um presente: aquilo que você está de olho faz tempo", d:"Me mostra o que é e o carrinho é meu."},
-  {id:"jogos", e:"🎲", t:"Vale uma noite de jogos e risadas", d:"Tabuleiro, cartas ou videogame. Quem perder lava a louça (que vai ser eu)."},
-  {id:"filme", e:"🍿", t:"Vale uma noite de filmes com pipoca, cobertor e o filme que você escolher", d:"Sem reclamar da escolha e sem dormir no meio."},
-  {id:"cafe", e:"☕", t:"Vale um café da manhã na cama feito por mim", d:"Com tudo que você gosta, servido sem você precisar levantar."},
-  {id:"massagem", e:"💆", t:"Vale uma massagem relaxante de 30 minutos", d:"Óleo, música calma e cronômetro ligado. Sem cobrar uma de volta."},
-  {id:"nada", e:"🛋️", t:"Vale um dia sem você fazer absolutamente nada: eu cuido de tudo", d:"Casa, comida, recados. Seu único trabalho é descansar."},
-  {id:"surpresa", e:"🎈", t:"Vale um passeio surpresa", d:"Você só sabe a roupa que precisa usar. O resto é segredo até chegar."},
-  {id:"tematico", e:"🌍", t:"Vale um jantar temático feito por mim (você escolhe o país)", d:"Comida, música e bebida do país escolhido. Pode pedir difícil."},
-  {id:"cartinha", e:"✉️", t:"Vale uma cartinha escrita à mão contando o quanto você é importante pra mim", d:"Papel de verdade, caneta e sem limite de páginas."},
-  {id:"gps", e:"🚗", t:"Vale um “te levo onde quiser”: hoje você é o GPS", d:"Você aponta o caminho, eu dirijo e não pergunto “tem certeza?”."},
-  {id:"desculpas", e:"🏳️", t:"Vale um pedido de desculpas garantido", d:"Mesmo que eu ache que estou certo. Use com sabedoria."},
-  {id:"doces", e:"🍫", t:"Vale uma caixa de chocolates e guloseimas surpresa montada por mim", d:"Escolhidos um por um, pensando em você."},
-  {id:"domingo", e:"😴", t:"Vale um domingo preguiçoso com café, coberta e maratona de série", d:"Pijama o dia inteiro é obrigatório."},
-  {id:"gastro", e:"🍽️", t:"Vale um rolê gastronômico: 3 lugares novos em 1 noite", d:"Entrada num, prato principal no outro, sobremesa no terceiro."},
-  {id:"radical", e:"🧗", t:"Vale uma tarde radical: kart, escalada, arvorismo, o que você topar", d:"Você escolhe a adrenalina, eu pago e tento não passar vergonha."},
-  {id:"turistas", e:"📸", t:"Vale um dia de turistas no Rio, com câmera, mapa e tudo", d:"Roteiro de quem acabou de chegar: museu, mirante, comida típica e muita foto."},
-  {id:"louca", e:"🧽", t:"Vale uma semana livre da louça", d:"Sete dias em que a pia é problema meu."}
+  {c:"escapada", id:"ilhagrande", e:"🏝️", t:"Vale um fim de semana na Ilha Grande", d:"Barco saindo de Angra ou Conceição de Jacareí, praia de Lopes Mendes e pousada pé na areia. Você escolhe a data, eu reservo."},
+  {c:"escapada", id:"paraty", e:"⛵", t:"Vale um fim de semana em Paraty", d:"Centro histórico de pedra, passeio de escuna pelas ilhas e jantar à luz de vela."},
+  {c:"escapada", id:"buzios", e:"🌊", t:"Vale um fim de semana em Búzios", d:"Rua das Pedras à noite, praias diferentes a cada dia e pôr do sol na Orla Bardot."},
+  {c:"escapada", id:"arraial", e:"🐠", t:"Vale um fim de semana em Arraial do Cabo", d:"O Caribe brasileiro: passeio de barco, Prainhas do Pontal do Atalaia e água transparente."},
+
+  {c:"postal", id:"corcovado", e:"⛰️", t:"Vale um passeio ao Cristo, no Corcovado", d:"Subida de trem, a foto clássica de braços abertos e um açaí lá embaixo depois."},
+  {c:"postal", id:"pao", e:"🚡", t:"Vale um pôr do sol no Pão de Açúcar com drinks no Clássico Sunset Club", d:"Bondinho no fim da tarde, mesa no Morro da Urca e o sol se pondo sobre a Guanabara. Ingressos e drinks por minha conta."},
+  {c:"postal", id:"grumari", e:"🏖️", t:"Vale um dia de praia em Grumari", d:"Cadeira, guarda-sol, cooler e zero pressa. Na volta, paramos pra comer onde você quiser."},
+  {c:"postal", id:"arpoador", e:"🌅", t:"Vale um pôr do sol no Arpoador", d:"A gente chega cedo, pega um lugar na pedra e aplaude o sol junto com o Rio inteiro."},
+  {c:"postal", id:"piquenique", e:"🧺", t:"Vale um piquenique no Parque Lage com tudo preparado por mim", d:"Toalha, cesta montada e comidinhas que você gosta. Você só aparece."},
+  {c:"postal", id:"turistas", e:"📸", t:"Vale um dia de turistas no Rio, com câmera, mapa e tudo", d:"Roteiro de quem acabou de chegar: museu, mirante, comida típica e muita foto."},
+
+  {c:"comer", id:"musa", e:"🥐", t:"Vale um café da manhã no Musa, em São Conrado", d:"Pé na areia com a Pedra da Gávea de frente. A gente chega cedo e pede de tudo."},
+  {c:"comer", id:"nusa", e:"🌺", t:"Vale um brunch no Nusa Café, em Ipanema", d:"Um pedaço de Bali em Ipanema: bowls, cafés bonitos e fotos para o feed."},
+  {c:"comer", id:"skylab", e:"🍸", t:"Vale um drink no Skylab, no 30º andar em Copacabana", d:"A praia de Copacabana inteira lá embaixo. Vamos no fim da tarde pra pegar a luz bonita."},
+  {c:"comer", id:"camolese", e:"🍷", t:"Vale um jantar na Casa Camolese com vista pro Cristo", d:"Jardim Botânico, o Jockey na frente e o Cristo iluminado no alto."},
+  {c:"comer", id:"xian", e:"🥢", t:"Vale um jantar no Xian, no rooftop com vista pro Pão de Açúcar", d:"Comida chinesa contemporânea com a Baía de Guanabara, o Cristo e o Pão de Açúcar na mesma janela."},
+  {c:"comer", id:"bira", e:"🦐", t:"Vale um almoço de domingo no Bira, em Guaratiba", d:"Frutos do mar com vista da Restinga de Marambaia, pertinho de casa e sem pressa de voltar."},
+  {c:"comer", id:"flordoceu", e:"🌿", t:"Vale um jantar no Flor do Céu, no meio do verde", d:"Restaurante escondido perto do Dois Irmãos, com o mar lá embaixo. Clima de date de verdade."},
+  {c:"comer", id:"senado", e:"🎶", t:"Vale uma noite no Centro: samba no Armazém Senado e jantar no Lilia", d:"Roda de samba num bar de 1907 e depois um dos menus degustação mais elogiados do Rio."},
+  {c:"comer", id:"tematico", e:"🌍", t:"Vale um jantar temático feito por mim (você escolhe o país)", d:"Comida, música e bebida do país escolhido. Pode pedir difícil."},
+
+  {c:"aventura", id:"aventura", e:"🧭", t:"Vale uma aventura nova que nunca fizemos juntos", d:"Algo que nenhum de nós dois fez ainda. Você sugere, eu organizo."},
+  {c:"aventura", id:"radical", e:"🧗", t:"Vale uma tarde radical: kart, escalada, arvorismo, o que você topar", d:"Você escolhe a adrenalina, eu pago e tento não passar vergonha."},
+  {c:"aventura", id:"surpresa", e:"🎈", t:"Vale um passeio surpresa", d:"Você só sabe a roupa que precisa usar. O resto é segredo até chegar."},
+  {c:"aventura", id:"gps", e:"🚗", t:"Vale um “te levo onde quiser”: hoje você é o GPS", d:"Você aponta o caminho, eu dirijo e não pergunto “tem certeza?”."},
+  {c:"aventura", id:"offline", e:"📵", t:"Vale um dia offline a dois", d:"Celulares guardados na gaveta do café da manhã até a hora de dormir."},
+
+  {c:"casa", id:"cafe", e:"☕", t:"Vale um café da manhã na cama feito por mim", d:"Com tudo que você gosta, servido sem você precisar levantar."},
+  {c:"casa", id:"filme", e:"🍿", t:"Vale uma noite de filmes com pipoca, cobertor e o filme que você escolher", d:"Sem reclamar da escolha e sem dormir no meio."},
+  {c:"casa", id:"jogos", e:"🎲", t:"Vale uma noite de jogos e risadas", d:"Tabuleiro, cartas ou videogame. Quem perder lava a louça (que vai ser eu)."},
+  {c:"casa", id:"massagem", e:"💆", t:"Vale uma massagem relaxante de 30 minutos", d:"Óleo, música calma e cronômetro ligado. Sem cobrar uma de volta."},
+  {c:"casa", id:"domingo", e:"😴", t:"Vale um domingo preguiçoso com café, coberta e maratona de série", d:"Pijama o dia inteiro é obrigatório."},
+  {c:"casa", id:"nada", e:"🛋️", t:"Vale um dia sem você fazer absolutamente nada: eu cuido de tudo", d:"Casa, comida, recados. Seu único trabalho é descansar."},
+  {c:"casa", id:"louca", e:"🧽", t:"Vale uma semana livre da louça", d:"Sete dias em que a pia é problema meu."},
+  {c:"casa", id:"cartinha", e:"✉️", t:"Vale uma cartinha escrita à mão contando o quanto você é importante pra mim", d:"Papel de verdade, caneta e sem limite de páginas."},
+  {c:"casa", id:"doces", e:"🍫", t:"Vale uma caixa de chocolates e guloseimas surpresa montada por mim", d:"Escolhidos um por um, pensando em você."},
+  {c:"casa", id:"presente", e:"🎁", t:"Vale um presente: aquilo que você está de olho faz tempo", d:"Me mostra o que é e o carrinho é meu."},
+  {c:"casa", id:"diasim", e:"🙌", t:"Vale um dia de sim: não posso recusar nenhuma ideia sua", d:"Do café ao jantar, a resposta é sim. Com moderação, por favor."},
+  {c:"casa", id:"desculpas", e:"🏳️", t:"Vale um pedido de desculpas garantido", d:"Mesmo que eu ache que estou certo. Use com sabedoria."}
 ];
 
 const blank={used:{},wish:""};
@@ -210,31 +228,45 @@ function renderCover(){
 }
 
 function wildVale(){
-  return {id:WILD,e:"✍️",
+  return {c:"wild",id:WILD,e:"✍️",
     t: state.wish?`Vale ${state.wish}`:"O último é você quem escolhe",
     d: state.wish?"O pedido que você mesma escreveu.":"Escreve aqui o que você quer. Vira um cupom como os outros, e eu cumpro."}
 }
 
+function renderTabs(){
+  const opts=[["all","Todos"],...CATS.map(c=>[c.id,c.n]),["used","Usados"]];
+  const t=document.getElementById("tabs");t.innerHTML="";
+  opts.forEach(([id,n])=>{const b=document.createElement("button");b.className="tab";b.id="tab-"+id;b.textContent=n;
+    b.setAttribute("aria-pressed",filter===id);b.addEventListener("click",()=>{filter=id;renderTabs();render()});t.appendChild(b)});
+}
+function ticketEl(v){
+  const u=state.used[v.id];
+  const li=document.createElement("li");
+  const b=document.createElement("button");
+  b.className="ticket"+(u?" used":"")+(v.id===WILD?" wild":"");
+  b.setAttribute("aria-label",v.t+(u?", já usado":""));
+  const txt=v.id===WILD&&!state.wish?`O último é você quem escolhe<em>toque pra escrever</em>`:esc(v.t);
+  b.innerHTML=`${stub}<div class="text${v.t.length>62?" long":""}">${txt}</div>
+    <div class="seal">${sealSVG}<i>${v.e}</i></div>
+    ${u?`<div class="usedmark">USADO<small>${fmt(u)}</small></div>`:""}`;
+  b.addEventListener("click",()=>openSheet(v.id));
+  li.appendChild(b);return li;
+}
 function render(){
   renderCover();
   const all=[...VALES,wildVale()];
-  const list=all.filter(v=>filter==="all"||(filter==="used")===!!state.used[v.id]);
   const book=document.getElementById("book");book.innerHTML="";
-  if(!list.length){book.innerHTML=`<li class="empty">${filter==="used"?"Nenhum vale usado ainda.":"Você usou todos. Hora de eu fazer outro talão!"}</li>`}
+  let list;
+  if(filter==="used")list=all.filter(v=>state.used[v.id]);
+  else if(filter==="all")list=all;
+  else list=all.filter(v=>v.c===filter);
+  if(!list.length){book.innerHTML=`<li class="empty">${filter==="used"?"Nenhum vale usado ainda.":"Nada por aqui."}</li>`}
+  let last=null;
   list.forEach(v=>{
-    const u=state.used[v.id];
-    const li=document.createElement("li");
-    const b=document.createElement("button");
-    b.className="ticket"+(u?" used":"")+(v.id===WILD?" wild":"");
-    b.setAttribute("aria-label",v.t+(u?", já usado":""));
-    const txt=v.id===WILD&&!state.wish
-      ? `O último é você quem escolhe<em>toque pra escrever</em>`
-      : esc(v.t);
-    b.innerHTML=`${stub}<div class="text${v.t.length>62?" long":""}">${txt}</div>
-      <div class="seal">${sealSVG}<i>${v.e}</i></div>
-      ${u?`<div class="usedmark">USADO<small>${fmt(u)}</small></div>`:""}`;
-    b.addEventListener("click",()=>openSheet(v.id));
-    li.appendChild(b);book.appendChild(li);
+    if(filter==="all"&&v.c!==last){last=v.c;const cat=CATS.find(c=>c.id===v.c);
+      if(cat){const h=document.createElement("li");h.className="cat";h.textContent=cat.n;book.appendChild(h)}
+      else{const h=document.createElement("li");h.className="cat";h.textContent="Coringa";book.appendChild(h)}}
+    book.appendChild(ticketEl(v));
   });
   const left=all.filter(v=>!state.used[v.id]).length;
   document.getElementById("count").textContent=`${left} de ${all.length} disponíveis`;
@@ -283,10 +315,7 @@ function lucky(){
 sheet.addEventListener("click",e=>{if(e.target===sheet)closeSheet()});
 document.addEventListener("keydown",e=>{if(e.key==="Escape")closeSheet()});
 document.getElementById("luck").addEventListener("click",lucky);
-[["all","tab-all"],["free","tab-free"],["used","tab-used"]].forEach(([f,id])=>{
-  document.getElementById(id).addEventListener("click",()=>{filter=f;
-    document.querySelectorAll(".tab").forEach(t=>t.setAttribute("aria-pressed",t.id===id));render()})});
-
+renderTabs();
 render();
 </script>
 
