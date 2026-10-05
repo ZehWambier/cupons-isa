@@ -140,6 +140,7 @@ footer{font-size:12px;color:var(--muted);text-align:center;line-height:1.5}
 .btn.wa{background:#1f7a4d;color:#fff}
 .btn.cal{background:var(--ink);color:var(--cream)}
 .hint{font-size:12px;color:var(--muted);text-align:center}
+.hint a{color:var(--ink);font-weight:700}
 /* Abertura */
 .intro{position:fixed;inset:0;z-index:20;background:var(--red);color:var(--cream);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:18px;
   padding:calc(24px + env(safe-area-inset-top,0px)) 24px calc(24px + env(safe-area-inset-bottom,0px));text-align:center;overflow:auto}
@@ -350,6 +351,51 @@ function openLocked(v){
   const a=document.getElementById("sheet-actions");a.innerHTML="";a.append(btn("Tá bom, eu espero","ghost",closeSheet));
   sheet.hidden=false;a.querySelector("button").focus();
 }
+
+function wrapLines(ctx,text,maxW){const words=text.split(" ");const lines=[];let cur="";
+  words.forEach(w=>{const t=cur?cur+" "+w:w;if(ctx.measureText(t).width>maxW&&cur){lines.push(cur);cur=w}else cur=t});if(cur)lines.push(cur);return lines}
+async function ticketPNG(v){
+  try{await document.fonts.ready}catch(e){}
+  const W=1080,H=560,c=document.createElement("canvas");c.width=W;c.height=H;const x=c.getContext("2d");
+  x.fillStyle="#f6efe6";x.fillRect(0,0,W,H);
+  const X0=40,Y0=60,X1=W-40,Y1=H-60,R=36,cy=H/2;
+  x.fillStyle="#d90f12";x.beginPath();x.roundRect(X0,Y0,X1-X0,Y1-Y0,R);x.fill();
+  x.globalCompositeOperation="destination-out";[X0,X1].forEach(px=>{x.beginPath();x.arc(px,cy,26,0,7);x.fill()});
+  x.globalCompositeOperation="source-over";
+  x.fillStyle="#f6efe6";[X0,X1].forEach(px=>{x.beginPath();x.arc(px,cy,26,0,7);x.fill()});
+  // canhoto
+  x.save();x.translate(X0+75,cy);x.rotate(-Math.PI/2);x.fillStyle="#fbe9de";x.textAlign="center";
+  x.font='52px "Archivo Black", Arial Black, sans-serif';x.fillText("CUPOM",0,-6);x.fillText(NAME,0,50);x.restore();
+  // picote
+  x.strokeStyle="#fbe9de";x.lineWidth=5;x.setLineDash([16,12]);x.beginPath();x.moveTo(X0+165,Y0+20);x.lineTo(X0+165,Y1-20);x.stroke();x.setLineDash([]);
+  x.save();x.translate(X0+200,cy);x.rotate(-Math.PI/2);x.fillStyle="#fbe9de";x.textAlign="center";x.font='800 17px Archivo, Arial, sans-serif';x.fillText("VÁLIDO ATÉ 08.10.27",0,6);x.restore();
+  // xadrez
+  const cx0=X0+222,sq=18;for(let yy=Y0;yy<Y1;yy+=sq)for(let k=0;k<2;k++){if(((yy-Y0)/sq+k)%2===0){x.fillStyle="#fbe9de";x.fillRect(cx0+k*sq,yy,sq,Math.min(sq,Y1-yy))}}
+  // texto
+  x.fillStyle="#fbe9de";x.font='46px "Archivo Black", Arial Black, sans-serif';
+  const tx=cx0+2*sq+30, maxW=X1-tx-230;let lines=wrapLines(x,v.t,maxW);
+  if(lines.length>5){x.font='36px "Archivo Black", Arial Black, sans-serif';lines=wrapLines(x,v.t,maxW)}
+  const lh=parseInt(x.font)*1.08;let ty=cy-(lines.length*lh)/2+lh*.8;lines.forEach(l=>{x.fillText(l,tx,ty);ty+=lh});
+  // selo
+  const sx=X1-125,n=28,Ro=95,Ri=86;x.fillStyle="#fbe9de";x.beginPath();
+  for(let i=0;i<n*2;i++){const a=Math.PI*i/n,r=i%2?Ri:Ro;x.lineTo(sx+r*Math.cos(a),cy+r*Math.sin(a))}x.fill();
+  x.strokeStyle="#d90f12";x.lineWidth=5;x.beginPath();x.arc(sx,cy,64,0,7);x.stroke();
+  x.font="70px sans-serif";x.textAlign="center";x.textBaseline="middle";x.fillText(v.e,sx,cy+4);x.textBaseline="alphabetic";
+  // carimbo
+  if(state.used[v.id]){x.save();x.translate(sx-10,cy+118);x.rotate(-0.14);x.scale(.82,.82);x.fillStyle="rgba(251,233,222,.93)";x.strokeStyle="#1d3b8f";x.lineWidth=7;
+    x.beginPath();x.roundRect(-130,-55,260,110,12);x.fill();x.stroke();x.fillStyle="#1d3b8f";x.textAlign="center";
+    x.font='50px "Archivo Black", Arial Black, sans-serif';x.fillText("USADO",0,8);x.font='800 22px Archivo, Arial, sans-serif';x.fillText(fmt(state.used[v.id]),0,40);x.restore()}
+  return new Promise(r=>c.toBlob(r,"image/png"));
+}
+async function shareTicket(v,fallbackHref){
+  const text=`Amor, quero usar o vale: ${v.t.replace(/^Vale\s+/,"")} 💌`;
+  try{
+    const blob=await ticketPNG(v);
+    const file=new File([blob],`cupom-${v.id}.png`,{type:"image/png"});
+    if(navigator.canShare&&navigator.canShare({files:[file]})){await navigator.share({files:[file],text});return}
+  }catch(e){if(e&&e.name==="AbortError")return}
+  window.location.href=fallbackHref;
+}
 function waLink(v){return `https://wa.me/${WHATSAPP}?text=`+encodeURIComponent(`Amor, quero usar o vale: ${v.t.replace(/^Vale\s+/,"")} 💌`)}
 function pad(n){return String(n).padStart(2,"0")}
 function calLink(v,date,time){
@@ -372,7 +418,8 @@ function usedActions(v,a,x,justNow){
   w.innerHTML=`<label>${isTrip?"Sexta da viagem":"Dia"}<input type="date" id="cal-date" value="${nextSaturday()}"></label>`+
     (isTrip?"":`<label>Horário<input type="time" id="cal-time" value="19:00"></label>`);
   x.appendChild(w);
-  a.append(linkBtn("Avisar o José no WhatsApp","wa",waLink(v)));
+  const share=btn("Mandar o cupom pro José","wa",()=>shareTicket(v,waLink(v)));a.append(share);
+  const h0=document.createElement("div");h0.className="hint";h0.innerHTML=`Escolha o WhatsApp e a conversa com o José. Não abriu? <a href="${waLink(v)}" target="_blank" rel="noopener">Mandar só o texto</a>`;a.append(h0);
   const cal=linkBtn("Marcar na agenda de nós dois","cal","#");
   const upd=()=>{cal.href=calLink(v,x.querySelector("#cal-date").value,x.querySelector("#cal-time")?.value)};
   x.querySelectorAll("input").forEach(i=>i.addEventListener("input",upd));upd();
