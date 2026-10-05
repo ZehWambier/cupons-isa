@@ -180,7 +180,7 @@ footer{font-size:12px;color:var(--muted);text-align:center;line-height:1.5}
   <div class="photo" id="intro-photo">❤️</div>
   <h2>Feliz aniversário de casamento, Bella</h2>
   <p>Mais um ano escolhendo você todos os dias. Esse talão é pra gente continuar colecionando dias bons juntos. Alguns vales já estão liberados, os outros vão chegando ao longo do ano.</p>
-  <div class="sig">Com amor, José</div>
+  <div class="sig">Com amor, Zé</div>
   <button class="seal-btn" id="open-seal">Rasgar o lacre</button>
 </div>
 <div class="sheet" id="sheet" hidden>
@@ -418,8 +418,8 @@ function usedActions(v,a,x,justNow){
   w.innerHTML=`<label>${isTrip?"Sexta da viagem":"Dia"}<input type="date" id="cal-date" value="${nextSaturday()}"></label>`+
     (isTrip?"":`<label>Horário<input type="time" id="cal-time" value="19:00"></label>`);
   x.appendChild(w);
-  const share=btn("Mandar o cupom pro José","wa",()=>shareTicket(v,waLink(v)));a.append(share);
-  const h0=document.createElement("div");h0.className="hint";h0.innerHTML=`Escolha o WhatsApp e a conversa com o José. Não abriu? <a href="${waLink(v)}" target="_blank" rel="noopener">Mandar só o texto</a>`;a.append(h0);
+  const share=btn("Mandar o cupom pro Zé","wa",()=>shareTicket(v,waLink(v)));a.append(share);
+  const h0=document.createElement("div");h0.className="hint";h0.innerHTML=`Escolha o WhatsApp e a conversa com o Zé. Não abriu? <a href="${waLink(v)}" target="_blank" rel="noopener">Mandar só o texto</a>`;a.append(h0);
   const cal=linkBtn("Marcar na agenda de nós dois","cal","#");
   const upd=()=>{cal.href=calLink(v,x.querySelector("#cal-date").value,x.querySelector("#cal-time")?.value)};
   x.querySelectorAll("input").forEach(i=>i.addEventListener("input",upd));upd();
